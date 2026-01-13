@@ -44,7 +44,7 @@ try:
     # 初始化签到消息
     msg = "签到失败"
     if response.status_code == 200:
-        msg = "签到成功！"
+        msg = "定时auto签到成功！"
 
     # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
     response_phone = requests.get(
@@ -73,3 +73,4 @@ except Exception as e:
         )
     except:
         pass
+
