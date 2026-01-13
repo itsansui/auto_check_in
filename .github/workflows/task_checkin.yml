@@ -1,44 +1,38 @@
-# 1. 工作流名称（在 GitHub 仓库的 Actions 页面显示）
-name: Task Checkin Workflow
+# 工作流名称：明确标注无GitHub定时，仅用于启动脚本
+name: Longterm Checkin (No GitHub Schedule)
 
-# 2. 触发条件（仅保留核心执行需求，可按需扩展）
+# 触发条件：仅支持「推送测试」和「手动触发」，无任何自动定时（符合需求）
 on:
-  # 可选：向 main 分支推送代码时触发（验证脚本是否可运行）
+  # 推送代码到main分支时触发（用于测试脚本是否能正常启动、依赖是否完整）
   push:
     branches: [ main ]
-  # 推荐：定时触发（按需自动执行签到，使用 cron 表达式，UTC 时间）
-  # 示例：每天 UTC 时间 20:00 执行（对应北京时间次日 4:00，可自行调整）
-  schedule:
-    - cron: '0 20 * * *'
+  # 手动触发（在GitHub Actions页面手动点击"Run workflow"启动，灵活可控）
+  workflow_dispatch:
 
-# 3. 任务（Job）：定义单个任务执行脚本
+# 定义单个任务：仅负责启动脚本，不参与任何定时逻辑
 jobs:
-  # 任务名称：run-checkin-script（语义更清晰）
-  run-checkin-script:
-    # 4. 指定 Runner 运行环境（兼容性最好的 Ubuntu 最新版）
+  start-checkin-script:
+    # 选择兼容性最好的云端运行环境
     runs-on: ubuntu-latest
 
-    # 5. 步骤（Step）：按顺序执行具体操作，补充关键缺失步骤
+    # 任务执行步骤：完整流程保障脚本可启动
     steps:
-      # 步骤1：拉取当前仓库的代码到 Runner 环境（核心缺失步骤，必须添加）
-      # 作用：将仓库中的 task_checkin.py 脚本下载到 GitHub 云端 Runner 中
-      - name: 拉取仓库代码
-        uses: actions/checkout@v4  # 官方拉取代码 Action，稳定可靠
+      # 步骤1：拉取仓库代码（必选，云端Runner无本地脚本文件）
+      - name: 拉取仓库代码到云端Runner
+        uses: actions/checkout@v4
 
-      # 步骤2：设置 Python 运行环境
-      - name: 配置 Python 3.10 环境
+      # 步骤2：配置Python 3.10环境（匹配脚本运行需求）
+      - name: 配置Python 3.10运行环境
         uses: actions/setup-python@v4
-        with: 
-          python-version: '3.10'  # 锁定 Python 版本，保证一致性
+        with:
+          python-version: '3.10'
 
-      # 步骤3（可选但推荐）：安装脚本依赖（如果 auto_checkin.py 有第三方依赖）
-      # 作用：解决脚本因缺少依赖而运行失败的问题
-      # 说明：如果有依赖，需在仓库根目录创建 requirements.txt，写入依赖包名（如 requests==2.31.0）
-      - name: 安装脚本依赖包
+      # 步骤3：安装脚本所需第三方依赖（requests + schedule）
+      - name: 安装requests和schedule依赖包
         run: |
-          python -m pip install --upgrade pip  # 升级 pip 工具
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  # 有依赖文件则安装
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 步骤4：执行自动签到脚本
-      - name: 运行自动签到脚本
+      # 步骤4：启动签到脚本（仅启动，后续逻辑由脚本自身控制）
+      - name: 运行本地长期循环签到脚本
         run: python task_checkin.py
