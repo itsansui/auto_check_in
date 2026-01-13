@@ -1,5 +1,5 @@
 # 工作流名称：明确标注无GitHub定时，仅用于启动脚本
-name: Longterm Checkin (No GitHub Schedule)
+name: Task Checkin
 
 # 触发条件：仅支持「推送测试」和「手动触发」，无任何自动定时（符合需求）
 on:
@@ -35,4 +35,4 @@ jobs:
 
       # 步骤4：启动签到脚本（仅启动，后续逻辑由脚本自身控制）
       - name: 运行本地长期循环签到脚本
-        run: python task_checkin.py
+        run: python auto_checkin.py
