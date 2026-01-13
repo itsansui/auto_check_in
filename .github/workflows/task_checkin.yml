@@ -35,4 +35,4 @@ jobs:
 
       # 步骤4：启动签到脚本（仅启动，后续逻辑由脚本自身控制）
       - name: 运行本地长期循环签到脚本
-        run: python auto_checkin.py
+        run: python task_checkin.py
