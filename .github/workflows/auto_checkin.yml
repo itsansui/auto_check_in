@@ -20,17 +20,11 @@ jobs:
     # 5. 步骤（Step）：该 Job 要执行的具体操作，按顺序执行
     steps:
       # 步骤1：使用官方 Action 拉取当前仓库的代码到 Runner 环境
-      # 必选步骤：如果工作流需要操作仓库代码（如构建、测试），必须先拉取代码
-      - name: Checkout repository code  # 步骤名称（自定义，便于查看日志）
-        uses: actions/checkout@v4  # 使用第三方 Action（格式：作者/仓库@版本）
-
-      # 步骤2：执行命令行脚本，打印问候语和环境信息
-      - name: Print hello world and env info
-        run: |  # run 用于执行命令行命令，多行命令用 | 分隔
-          echo "Hello, GitHub Actions!"
-          echo "当前工作目录：$(pwd)"
-          echo "当前 Node 版本：$(node -v)"
-
-      - name: Run auto_checkin
+      - name: 设置python环境  
+        uses: actions/setup-python@v4  # 使用第三方 Action（格式：作者/仓库@版本）
+        with: 
+          python-version: '3.10'
+      # 步骤2：执行命令行脚本
+      - name: 运行自动签到脚本
         run: |
           python auto_checkin.py
