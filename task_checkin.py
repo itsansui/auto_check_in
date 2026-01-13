@@ -67,7 +67,7 @@ def checkin():
         timeout=30
     )
 # 配置脚本内部定时：每天05:00执行签到（不依赖任何云端定时）
-schedule.every().day.at("05:00").do(checkin)
+schedule.every().day.at("20:15").do(checkin)
 
 # 启动无限循环，持续监听定时任务（长期运行核心逻辑）
 if __name__ == "__main__":
