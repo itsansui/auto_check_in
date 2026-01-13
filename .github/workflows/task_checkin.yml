@@ -1,66 +1,44 @@
-# ==============================================================================
-# GitHub Actions 定时任务工作流配置文件
-# 文件名：.github/workflows/scheduled-task.yml（默认存放路径，需手动创建对应目录和文件）
-# 功能：每天自动触发指定任务，此处以打印当前 UTC 时间为例，可扩展为其他业务逻辑（如数据备份、接口巡检等）
-# ==============================================================================
-
-# 工作流名称：用于在 GitHub Actions 面板中标识该工作流，可自定义
+# 1. 工作流名称（在 GitHub 仓库的 Actions 页面显示）
 name: Task Checkin Workflow
 
-# ==============================================================================
-# 触发条件配置（on 关键字：指定触发工作流运行的事件）
-# 此处使用 schedule 事件实现定时触发，支持 cron 表达式配置执行时间
-# ==============================================================================
+# 2. 触发条件（仅保留核心执行需求，可按需扩展）
 on:
-  # 定时触发配置项：schedule 是 GitHub Actions 内置的定时事件
+  # 可选：向 main 分支推送代码时触发（验证脚本是否可运行）
+  push:
+    branches: [ main ]
+  # 推荐：定时触发（按需自动执行签到，使用 cron 表达式，UTC 时间）
+  # 示例：每天 UTC 时间 20:00 执行（对应北京时间次日 4:00，可自行调整）
   schedule:
-    # cron 表达式：用于定义定时执行的时间规则，格式为「分 时 日 月 周」
-    # 语法说明：
-    #   第 1 位：分钟（0-59），此处 0 表示整分执行
-    #   第 2 位：小时（0-23），此处 2 表示 UTC 时间 2 点执行
-    #   第 3 位：日期（1-31），此处 * 表示每天都执行
-    #   第 4 位：月份（1-12），此处 * 表示每个月都执行
-    #   第 5 位：星期（0-7，0 和 7 均表示周日），此处 * 表示每周的每一天都执行
-    # 关键注意点：GitHub Actions 的 cron 表达式使用 **UTC 时间**（不是本地时间）
-    # 时间转换示例：若你的本地时间是 UTC+8（中国标准时间），则 UTC 2 点 = 本地时间 10 点
-    # 如需修改执行时间：例如本地凌晨 2 点执行，对应 UTC 时间为前一天的 18 点，cron 表达式应改为 '0 18 * * *'
-    - cron: '0 2 * * *'
+    - cron: '0 20 * * *'
 
-# ==============================================================================
-# 任务配置（jobs 关键字：定义该工作流要执行的一系列任务，一个工作流可包含多个 jobs）
-# 此处定义了一个名为 scheduled-task 的任务，jobs 内部是任务的具体步骤
-# ==============================================================================
+# 3. 任务（Job）：定义单个任务执行脚本
 jobs:
-  # 任务名称：scheduled-task（可自定义，用于标识该任务）
-  scheduled-task:
-    # 运行环境：指定任务在哪个操作系统环境中执行
-    # 可选值：ubuntu-latest（推荐，轻量且高效）、windows-latest、macos-latest
+  # 任务名称：run-checkin-script（语义更清晰）
+  run-checkin-script:
+    # 4. 指定 Runner 运行环境（兼容性最好的 Ubuntu 最新版）
     runs-on: ubuntu-latest
 
-    # ==========================================================================
-    # 步骤配置（steps 关键字：定义该任务要执行的具体步骤，按从上到下的顺序依次执行）
-    # 每个 step 可以是「使用现成的 Action 插件」或「直接运行命令行指令」
-    # ==========================================================================
+    # 5. 步骤（Step）：按顺序执行具体操作，补充关键缺失步骤
     steps:
-      # 步骤 1：拉取当前仓库的代码到运行环境中
-      # name：步骤名称，用于在 Actions 运行日志中标识该步骤，可自定义
-      - name: Checkout code
-        # uses：使用 GitHub 官方提供的现成 Action 插件
-        # actions/checkout@v4：拉取代码的插件，v4 是插件的版本号（推荐使用稳定版）
-        # 作用：将当前仓库的代码克隆到 Ubuntu 运行环境中，后续步骤才能操作仓库内的文件
-        # 注意：如果后续步骤不需要操作仓库代码，此步骤可省略
-        uses: actions/checkout@v4
+      # 步骤1：拉取当前仓库的代码到 Runner 环境（核心缺失步骤，必须添加）
+      # 作用：将仓库中的 task_checkin.py 脚本下载到 GitHub 云端 Runner 中
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4  # 官方拉取代码 Action，稳定可靠
 
-      # 步骤 2：打印当前的 UTC 时间，验证定时任务是否正常执行
-      - name: Print current time
-        # run：在运行环境的终端中执行命令行指令（此处是 Ubuntu 系统，支持 Linux 命令）
-        # echo "当前 UTC 时间：$(date)"：Linux 命令，用于输出当前系统时间（UTC 时间）
-        # 作用：验证定时任务是否按时触发，可在 Actions 运行日志中查看输出结果
-        # 扩展：此处可替换为你的实际业务命令（如 python script.py、npm run build 等）
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      # 步骤2：设置 Python 运行环境
+      - name: 配置 Python 3.10 环境
+        uses: actions/setup-python@v4
+        with: 
+          python-version: '3.10'  # 锁定 Python 版本，保证一致性
 
-      - name: Run auto_checkin
+      # 步骤3（可选但推荐）：安装脚本依赖（如果 auto_checkin.py 有第三方依赖）
+      # 作用：解决脚本因缺少依赖而运行失败的问题
+      # 说明：如果有依赖，需在仓库根目录创建 requirements.txt，写入依赖包名（如 requests==2.31.0）
+      - name: 安装脚本依赖包
         run: |
-          python task_checkin.py
+          python -m pip install --upgrade pip  # 升级 pip 工具
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi  # 有依赖文件则安装
+
+      # 步骤4：执行自动签到脚本
+      - name: 运行自动签到脚本
+        run: python task_checkin.py
