@@ -30,3 +30,7 @@ jobs:
           echo "Hello, GitHub Actions!"
           echo "当前工作目录：$(pwd)"
           echo "当前 Node 版本：$(node -v)"
+
+      - name: Run auto_checkin
+        run: |
+          python auto_checkin.py
