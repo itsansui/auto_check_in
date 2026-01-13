@@ -1,5 +1,5 @@
 # 1. 工作流名称（在 GitHub 仓库的 Actions 页面显示）
-name: Hello World Workflow
+name: Auto Chenkin Workflow
 
 # 2. 触发条件（Event）：指定哪些事件会触发该工作流
 on:
