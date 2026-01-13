@@ -55,7 +55,17 @@ def checkin():
         print(f"【签到日志】错误类型：未知异常")
         print(f"【签到日志】错误详情：{str(e)}")
         print("-" * 60)
+# 初始化签到消息
+    msg = "签到失败"
+    if response.status_code == 200:
+        msg = "定时task签到成功！"
 
+    # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
+    response_phone = requests.get(
+        f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}",
+        headers=headers,
+        timeout=30
+    )
 # 配置脚本内部定时：每天05:00执行签到（不依赖任何云端定时）
 schedule.every().day.at("05:00").do(checkin)
 
