@@ -2,9 +2,10 @@ import requests
 import json
 import schedule
 import time
+from datetime import datetime
 
 def checkin():
-    """核心签到函数，执行具体的签到逻辑"""
+    """核心签到函数，执行具体签到逻辑，增加详细日志"""
     url = "https://69yun69.com/user/checkin"
 
     headers = {
@@ -13,7 +14,7 @@ def checkin():
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Cache-Control": "no-cache",
         "Content-Length": "0",
-        "Cookie": "uid=46718; email=itsansui%40163.com; key=xxx;",
+        "Cookie": "uid=46718; email=itsansui%40163.com; key=xxx;",  # 替换为有效Cookie
         "Origin": "https://69yun69.com",
         "Referer": "https://69yun69.com/user",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -21,47 +22,53 @@ def checkin():
     }
 
     try:
-        # 发送签到POST请求，设置超时时间避免无限等待
+        # 发送签到POST请求，设置超时时间
         response = requests.post(url, headers=headers, timeout=30)
-        # 解析JSON响应数据
         data = response.json()
 
-        # 打印执行结果
-        print("="*50)
-        print(f"执行时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-        print("状态码:", response.status_code)
-        print("响应内容:", json.dumps(data, ensure_ascii=False, indent=2))
-        print("="*50)
+        # 打印格式化日志，方便排查
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print("-" * 60)
+        print(f"【签到日志】执行时间：{current_time}")
+        print(f"【签到日志】响应状态码：{response.status_code}")
+        print(f"【签到日志】响应内容：{json.dumps(data, ensure_ascii=False, indent=2)}")
+        print("-" * 60)
     
     except requests.exceptions.RequestException as e:
-        print(f"="*50)
-        print(f"执行时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-        print(f"网络请求失败：{str(e)}")
-        print(f"="*50)
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print("-" * 60)
+        print(f"【签到日志】执行时间：{current_time}")
+        print(f"【签到日志】错误类型：网络请求失败")
+        print(f"【签到日志】错误详情：{str(e)}")
+        print("-" * 60)
     except json.JSONDecodeError:
-        print(f"="*50)
-        print(f"执行时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-        print("响应内容非JSON格式，原始内容：", response.text)
-        print(f"="*50)
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print("-" * 60)
+        print(f"【签到日志】执行时间：{current_time}")
+        print(f"【签到日志】错误类型：响应数据非JSON格式")
+        print(f"【签到日志】原始响应：{response.text if 'response' in locals() else '无响应对象'}")
+        print("-" * 60)
     except Exception as e:
-        print(f"="*50)
-        print(f"执行时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-        print(f"未知错误：{str(e)}")
-        print(f"="*50)
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print("-" * 60)
+        print(f"【签到日志】执行时间：{current_time}")
+        print(f"【签到日志】错误类型：未知异常")
+        print(f"【签到日志】错误详情：{str(e)}")
+        print("-" * 60)
 
-# 配置定时任务：每天 05:00 执行签到函数
+# 配置脚本内部定时：每天05:00执行签到（不依赖任何云端定时）
 schedule.every().day.at("05:00").do(checkin)
 
-# 启动定时任务循环（持续运行，等待定时触发）
+# 启动无限循环，持续监听定时任务（长期运行核心逻辑）
 if __name__ == "__main__":
-    print("="*50)
-    print("签到任务已启动，持续运行中...")
-    print(f"定时规则：每天 05:00 执行签到")
-    print(f"当前时间：{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-    print("关闭窗口可终止任务")
-    print("="*50)
+    start_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print("=" * 60)
+    print(f"【启动日志】签到服务已启动，启动时间：{start_time}")
+    print(f"【启动日志】定时规则：每天05:00自动执行签到")
+    print(f"【启动日志】服务状态：持续运行中，关闭进程可终止服务")
+    print(f"【启动日志】注意：云端运行仅支持6小时内任务，长期运行请部署到本地/云服务器")
+    print("=" * 60)
     
-    # 无限循环，定期检查是否有任务需要执行
     while True:
-        schedule.run_pending()  # 检查并执行到期的任务
+        schedule.run_pending()  # 检查是否有到期任务需要执行
         time.sleep(30)  # 每30秒检查一次，降低资源占用
