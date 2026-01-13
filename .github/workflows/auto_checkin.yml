@@ -1,0 +1,32 @@
+# 1. 工作流名称（在 GitHub 仓库的 Actions 页面显示）
+name: Hello World Workflow
+
+# 2. 触发条件（Event）：指定哪些事件会触发该工作流
+on:
+  # 当向 main 分支推送代码时触发（可替换为你的分支名，如 master）
+  push:
+    branches: [ main ]
+  # 可选：当创建针对 main 分支的 PR 时触发
+  pull_request:
+    branches: [ main ]
+
+# 3. 任务（Job）：一个工作流可以包含多个 Job，这里定义一个名为 build 的 Job
+jobs:
+  # 任务名称：build（自定义，如 test、deploy 等）
+  build:
+    # 4. 指定 Runner 运行环境（GitHub 云端 Runner，推荐 Ubuntu latest，兼容性最好）
+    runs-on: ubuntu-latest
+
+    # 5. 步骤（Step）：该 Job 要执行的具体操作，按顺序执行
+    steps:
+      # 步骤1：使用官方 Action 拉取当前仓库的代码到 Runner 环境
+      # 必选步骤：如果工作流需要操作仓库代码（如构建、测试），必须先拉取代码
+      - name: Checkout repository code  # 步骤名称（自定义，便于查看日志）
+        uses: actions/checkout@v4  # 使用第三方 Action（格式：作者/仓库@版本）
+
+      # 步骤2：执行命令行脚本，打印问候语和环境信息
+      - name: Print hello world and env info
+        run: |  # run 用于执行命令行命令，多行命令用 | 分隔
+          echo "Hello, GitHub Actions!"
+          echo "当前工作目录：$(pwd)"
+          echo "当前 Node 版本：$(node -v)"
