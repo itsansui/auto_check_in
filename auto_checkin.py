@@ -36,7 +36,13 @@ headers = {
 # POST 请求（请求体为空）
 response = requests.post(url, headers=headers)
 text = response.text  # 你的 requests 返回内容
+msg=“签到失败”
+if response.status_code==200:
+    msg="签到成功！"
+# 通知手机
+response——phone = requests.get(f“https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}”, headers=headers)
 
 data = json.loads(text)
 print("状态码:", response.status_code)
 print("响应内容:", json.dumps(response.json(), ensure_ascii=False, indent=2))
+
