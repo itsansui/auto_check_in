@@ -67,10 +67,11 @@ except Exception as e:
     # 异常时发送失败通知
     try:
         requests.get(
-            f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/脚本运行异常：{str(e)}",
+            f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/脚本运行异常：{str(e)}?icon=https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg",
             headers=headers,
             timeout=30
         )
     except:
         pass
+
 
