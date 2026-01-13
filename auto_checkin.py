@@ -1,7 +1,10 @@
 import requests
 import json
+
+# 签到接口地址
 url = "https://69yun69.com/user/checkin"
 
+# 请求头配置
 headers = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
     "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -33,16 +36,40 @@ headers = {
     "X-Requested-With": "XMLHttpRequest"
 }
 
-# POST 请求（请求体为空）
-response = requests.post(url, headers=headers)
-text = response.text  # 你的 requests 返回内容
-msg=“签到失败”
-if response.status_code==200:
-    msg="签到成功！"
-# 通知手机
-response——phone = requests.get(f“https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}”, headers=headers)
+try:
+    # 发送POST请求完成签到（请求体为空）
+    response = requests.post(url, headers=headers, timeout=30)
+    text = response.text
 
-data = json.loads(text)
-print("状态码:", response.status_code)
-print("响应内容:", json.dumps(response.json(), ensure_ascii=False, indent=2))
+    # 初始化签到消息
+    msg = "签到失败"
+    if response.status_code == 200:
+        msg = "签到成功！"
 
+    # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
+    response_phone = requests.get(
+        f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}",
+        headers=headers,
+        timeout=30
+    )
+
+    # 解析并打印响应内容（优化格式，避免解析失败报错）
+    try:
+        data = json.loads(text)
+        print("状态码:", response.status_code)
+        print("响应内容:", json.dumps(data, ensure_ascii=False, indent=2))
+    except json.JSONDecodeError:
+        print("状态码:", response.status_code)
+        print("响应内容（非JSON格式）:", text)
+
+except Exception as e:
+    print(f"脚本运行异常: {str(e)}")
+    # 异常时发送失败通知
+    try:
+        requests.get(
+            f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/脚本运行异常：{str(e)}",
+            headers=headers,
+            timeout=30
+        )
+    except:
+        pass
