@@ -14,7 +14,16 @@ def checkin():
         "Accept-Language": "zh-CN,zh;q=0.9",
         "Cache-Control": "no-cache",
         "Content-Length": "0",
-        "Cookie": "uid=46718; email=itsansui%40163.com; key=xxx;",  # 替换为有效Cookie
+        "Cookie": (
+        "uid=46718; "
+        "email=itsansui%40163.com; "
+        "key=3239c79ba224ed3502515a4cb274902b6d7868e57ce39; "
+        "ip=eb909621fea42d2ae7727743fa1d624c; "
+        "expire_in=1768896962; "
+        "PHPSESSID=vrnfdsfe1qfjn6t1mknms7lm0a; "
+        "mtauth=755ea777d7368ff8d9409553e3721772; "
+        "top=yes"
+    ),
         "Origin": "https://69yun69.com",
         "Referer": "https://69yun69.com/user",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
