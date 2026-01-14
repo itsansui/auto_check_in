@@ -62,7 +62,7 @@ def checkin():
 
     # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
     response_phone = requests.get(
-        f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}",
+        f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}?icon=https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg",
         headers=headers,
         timeout=30
     )
