@@ -7,19 +7,19 @@ url = "https://69yun69.com/user/checkin"
 # 请求头配置
 headers = {
     "Accept": "application/json, text/javascript, */*; q=0.01",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
+    "Accept-Encoding": "gzip, deflate",
     "Accept-Language": "zh-CN,zh;q=0.9",
     "Cache-Control": "no-cache",
     "Content-Length": "0",
     "Cookie": (
-        "uid=46718; "
-        "email=itsansui%40163.com; "
-        "key=3239c79ba224ed3502515a4cb274902b6d7868e57ce39; "
-        "ip=eb909621fea42d2ae7727743fa1d624c; "
-        "expire_in=1768896962; "
-        "PHPSESSID=vrnfdsfe1qfjn6t1mknms7lm0a; "
-        "mtauth=755ea777d7368ff8d9409553e3721772; "
-        "top=yes"
+        "uid=46718;"
+        "email=itsansui%40163.com;"
+        "key=48322f39d732f0853849d849d3c10ab5aba424c069040;"
+        "ip=ea0598694f02eac214bb036055d6846b;"
+        "expire_in=1768959185;"
+        "PHPSESSID=j4rpcvijr4m38kgnr1ek7n96vo;"
+        "mtauth=554aa904a2edc0129b208072c2d4e677;"
+        "pop=yes"
     ),
     "Origin": "https://69yun69.com",
     "Pragma": "no-cache",
@@ -35,17 +35,15 @@ headers = {
     ),
     "X-Requested-With": "XMLHttpRequest"
 }
-
 try:
     # 发送POST请求完成签到（请求体为空）
     response = requests.post(url, headers=headers, timeout=30)
     text = response.text
+    data = response.json()
 
-    # 初始化签到消息
-    msg = "签到失败"
-    if response.status_code == 200:
-        msg = "定时auto签到成功！"
-
+    ret = data.get("ret")
+    msg = data.get("msg")
+    
     # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
     response_phone = requests.get(
         f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}?icon=https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg",
@@ -73,6 +71,7 @@ except Exception as e:
         )
     except:
         pass
+
 
 
 
