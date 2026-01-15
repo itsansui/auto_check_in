@@ -15,6 +15,11 @@ jobs:
   run-checkin-script:
     # 指定运行环境（Ubuntu最新版，兼容性最好）
     runs-on: ubuntu-latest
+    env:
+      LOGIN_EMAIL: ${{ secrets.LOGIN_EMAIL }}
+      LOGIN_PASS: ${{ secrets.LOGIN_PASS }}
+      PUSH_URL: ${{ secrets.PUSH_URL }}
+      BARK_ICON: ${{ secrets.BARK_ICON }}
 
     # 任务执行步骤
     steps:
