@@ -3,7 +3,8 @@ import re
 import sys
 import requests
 from urllib.parse import urlencode
-
+# import dotenv
+# dotenv.load_dotenv()
 
 # ============================================================
 # 配置区（一般只需要改这里）
@@ -164,20 +165,16 @@ with requests.Session() as s:
         if not (login_resp.ok and login_data.get("ret") == 1):
             send_push(
                 s,
-                "69云 - 登录失败",
-                login_msg or f"HTTP 状态码：{login_resp.status_code}"
+                "69云 ",
+                login_msg or f"登录失败,HTTP 状态码：{login_resp.status_code}"
             )
-            raise SystemExit(
-                f"【错误】登录失败：{login_msg or login_resp.status_code}"
-            )
+            raise SystemExit(f"【错误】登录失败：{login_msg}")
 
         print("【信息】登录成功")
-        send_push(
-                s,
-                "登录成功"
-            )
+        send_push(s, "69云", "登录成功")
+
     except Exception as exc:
-        send_push(s, "69云 - 登录失败", str(exc))
+        send_push(s, "69云", '登录失败'+str(exc))
         raise SystemExit(f"【异常】登录过程发生异常：{exc}")
 
     # -------------------------
@@ -193,10 +190,7 @@ with requests.Session() as s:
         checkin = data.get("ret")
 
         # 提取获得流量
-        m = re.search(
-            r"获得了\s*([\d.]+\s*[A-Za-z]+)",
-            data.get("msg", "")
-        )
+        m = re.search(r"获得了\s*([\d.]+\s*[A-Za-z]+)", data.get("msg", ""))
         gained = m.group(1).replace(" ", "") if m else "未知"
 
         # 剩余流量
@@ -204,31 +198,28 @@ with requests.Session() as s:
         left = traffic_info.get("unUsedTraffic", "未知")
 
         if checkin == 1:
-            print(
-                f"【信息】签到成功："
-                f"获得流量 {gained}，"
-                f"剩余流量 {left}"
-            )
-
+            print(f"【信息】签到成功：获得 {gained}，剩余 {left}")
             send_push(
                 s,
-                "69云 - 签到成功",
-                f"获得流量：{gained}\n剩余流量：{left}"
+                "69云",
+                f"签到成功,获得流量：{gained}\n剩余流量：{left}"
             )
             sys.exit(0)
 
         elif checkin == 0:
+            print("【提示】今日已签到，无需重复操作")
             send_push(
                 s,
-                【提示】今日已签到，无需重复操作",
+                "69云",
+                "今日已签到，无需重复操作"
             )
+            sys.exit(0)
 
         else:
             reason = data.get("msg", "未知原因")
-            send_push(s, "69云 - 签到失败", reason)
-           
+            send_push(s, "69云", reason)
+            raise SystemExit(f"【错误】签到失败：{reason}")
 
     except Exception as exc:
-        send_push(s, "69云 - 签到失败", str(exc))
-        
-
+        send_push(s, "69云", str(exc))
+        raise SystemExit(f"【异常】签到过程发生异常：{exc}")
