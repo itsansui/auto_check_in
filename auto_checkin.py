@@ -15,7 +15,7 @@ LOGIN_URL = "https://69yun69.com/auth/login"
 # 签到接口地址
 CHECKIN_URL = "https://69yun69.com/user/checkin"
 # Bark 推送接口（可通过环境变量覆盖）
-PUSH_URL = os.getenv("PUSH_URL", "https://api.day.app/6E6UMtqjTU4HR4DVNXcXEC")
+PUSH_URL = os.getenv("PUSH_URL", "https://api.day.app/w7JBm2Rx34tcBvSvznpTUT")
 
 # Bark 推送级别（passive 表示静默通知）
 BARK_ICON = os.getenv("BARK_ICON", "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg")
@@ -222,3 +222,4 @@ with requests.Session() as s:
         raise SystemExit(
             f"[ERROR] checkin fail: Login successful, but check-in failed. Exception: {exc}"
         )
+
