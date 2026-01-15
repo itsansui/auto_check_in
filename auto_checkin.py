@@ -172,7 +172,10 @@ with requests.Session() as s:
             )
 
         print("【信息】登录成功")
-
+        send_push(
+                s,
+                "登录成功"
+            )
     except Exception as exc:
         send_push(s, "69云 - 登录失败", str(exc))
         raise SystemExit(f"【异常】登录过程发生异常：{exc}")
