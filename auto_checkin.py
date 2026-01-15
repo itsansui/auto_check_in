@@ -215,17 +215,17 @@ with requests.Session() as s:
             sys.exit(0)
 
         elif checkin == 0:
-            raise SystemExit("【提示】今日已签到，无需重复操作")
+            send_push(
+                s,
+                【提示】今日已签到，无需重复操作",
+            )
 
         else:
             reason = data.get("msg", "未知原因")
             send_push(s, "69云 - 签到失败", reason)
-            raise SystemExit(
-                f"【错误】签到失败：原因：{reason}"
-            )
+           
 
     except Exception as exc:
         send_push(s, "69云 - 签到失败", str(exc))
-        raise SystemExit(
-            f"【异常】签到过程发生异常：{exc}"
-        )
+        
+
