@@ -1,78 +1,224 @@
+import os
+import re
+import sys
 import requests
-import json
+from urllib.parse import urlencode
+
+
+# ============================================================
+# 配置区（一般只需要改这里）
+# ============================================================
+
+# 登录接口地址
+LOGIN_URL = "https://69yun69.com/auth/login"
 
 # 签到接口地址
-url = "https://69yun69.com/user/checkin"
+CHECKIN_URL = "https://69yun69.com/user/checkin"
+# Bark 推送接口（可通过环境变量覆盖）
+PUSH_URL = os.getenv("PUSH_URL", "https://api.day.app/6E6UMtqjTU4HR4DVNXcXEC")
 
-# 请求头配置
-headers = {
-    "Accept": "application/json, text/javascript, */*; q=0.01",
-    "Accept-Encoding": "gzip, deflate",
-    "Accept-Language": "zh-CN,zh;q=0.9",
-    "Cache-Control": "no-cache",
-    "Content-Length": "0",
-    "Cookie": (
-        "uid=46718;"
-        "email=itsansui%40163.com;"
-        "key=48322f39d732f0853849d849d3c10ab5aba424c069040;"
-        "ip=ea0598694f02eac214bb036055d6846b;"
-        "expire_in=1768959185;"
-        "PHPSESSID=j4rpcvijr4m38kgnr1ek7n96vo;"
-        "mtauth=554aa904a2edc0129b208072c2d4e677;"
-        "pop=yes"
-    ),
-    "Origin": "https://69yun69.com",
-    "Pragma": "no-cache",
-    "Priority": "u=1, i",
-    "Referer": "https://69yun69.com/user",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Site": "same-origin",
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "X-Requested-With": "XMLHttpRequest"
+# Bark 推送级别（passive 表示静默通知）
+BARK_ICON = os.getenv("BARK_ICON", "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg")
+
+# 登录邮箱（从环境变量读取，避免明文写入代码）
+LOGIN_EMAIL = os.getenv("LOGIN_EMAIL", "").strip()
+
+# 登录密码（从环境变量读取）
+LOGIN_PASS = os.getenv("LOGIN_PASS", "").strip()
+
+# 登录请求的表单数据
+LOGIN_PAYLOAD = {
+    "email": LOGIN_EMAIL,      # 登录邮箱
+    "passwd": LOGIN_PASS,      # 登录密码
+    "remember_me": "on",       # 记住登录状态
+    "code": "",                # 验证码字段（当前未使用）
 }
-try:
-    # 发送POST请求完成签到（请求体为空）
-    response = requests.post(url, headers=headers, timeout=30)
-    text = response.text
-    data = response.json()
 
-    ret = data.get("ret")
-    msg = data.get("msg")
-    
-    # 发送手机通知（修正语法错误，使用英文引号和合法变量名）
-    response_phone = requests.get(
-        f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/{msg}?icon=https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg",
-        headers=headers,
-        timeout=30
+# 登录请求头（模拟浏览器 + AJAX 请求）
+LOGIN_HEADERS = {
+    "Origin": "https://69yun69.com",
+    "Referer": "https://69yun69.com/auth/login",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "X-Requested-With": "XMLHttpRequest",
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+}
+
+# 签到请求头
+CHECKIN_HEADERS = {
+    "Origin": "https://69yun69.com",
+    "Referer": "https://69yun69.com/user",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "X-Requested-With": "XMLHttpRequest",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+}
+
+# ============================================================
+# 启动前的安全检查
+# ============================================================
+
+# 必须提供登录邮箱和密码
+if not LOGIN_EMAIL or not LOGIN_PASS:
+    raise SystemExit("Missing LOGIN_EMAIL or LOGIN_PASS environment variables.")
+
+# 必须提供推送地址
+if not PUSH_URL:
+    raise SystemExit("Missing PUSH_URL environment variable.")
+
+
+# ============================================================
+# Bark 推送客户端
+# ============================================================
+
+class PushClient:
+    """
+    一个轻量级的 Bark URL 构建器
+    用于拼接：推送标题 / 内容 / 查询参数
+    """
+
+    def __init__(self, base_url: str):
+        self.base_url = base_url.rstrip("/")  # 去掉末尾 /
+        self._path_parts = []                 # URL 路径部分
+        self._query = {}                      # URL 查询参数
+
+    def add_path(self, *parts: str):
+        """添加 URL 路径（标题、正文等）"""
+        for p in parts:
+            if p:
+                self._path_parts.append(p.strip("/"))
+        return self
+
+    def add_query(self, **params):
+        """添加 URL 查询参数"""
+        for k, v in params.items():
+            if v is not None:
+                self._query[k] = v
+        return self
+
+    def build(self) -> str:
+        """生成最终推送 URL"""
+        path = "/".join(self._path_parts)
+        url = f"{self.base_url}/{path}" if path else self.base_url
+        if self._query:
+            url = f"{url}?{urlencode(self._query)}"
+        return url
+
+
+def send_push(session: requests.Session, title: str, body: str = "", icon: str = "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg"):
+    """
+    发送 Bark 推送通知
+    """
+    url = (
+        PushClient(PUSH_URL)
+        .add_path(title, body)
+        .add_query(icon=icon)
+        .build()
     )
+    session.get(url)
 
-    # 解析并打印响应内容（优化格式，避免解析失败报错）
-    try:
-        data = json.loads(text)
-        print("状态码:", response.status_code)
-        print("响应内容:", json.dumps(data, ensure_ascii=False, indent=2))
-    except json.JSONDecodeError:
-        print("状态码:", response.status_code)
-        print("响应内容（非JSON格式）:", text)
 
-except Exception as e:
-    print(f"脚本运行异常: {str(e)}")
-    # 异常时发送失败通知
+# ============================================================
+# HTTP 工具函数
+# ============================================================
+
+def post_json(session: requests.Session, url: str, **kwargs):
+    """
+    发送 POST 请求并解析 JSON 响应
+    如果返回内容不是 JSON，则抛出异常
+    """
+    resp = session.post(url, **kwargs)
     try:
-        requests.get(
-            f"https://api.day.app/w7JBm2Rx34tcBvSvznpTUT/脚本运行异常：{str(e)}?icon=https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg",
-            headers=headers,
-            timeout=30
+        data = resp.json()
+    except ValueError:
+        # 防止服务器返回 HTML 或异常文本
+        snippet = resp.text[:80]
+        raise RuntimeError(f"非JSON响应: {snippet}")
+    return resp, data
+
+
+# ============================================================
+# 主流程：登录 → 签到
+# ============================================================
+
+with requests.Session() as s:
+    # -------------------------
+    # 登录流程
+    # -------------------------
+    try:
+        login_resp, login_data = post_json(
+            s,
+            LOGIN_URL,
+            data=LOGIN_PAYLOAD,
+            headers=LOGIN_HEADERS
         )
-    except:
-        pass
 
+        # 登录返回消息
+        login_msg = login_data.get("msg", "") if isinstance(login_data, dict) else ""
 
+        # 登录失败处理
+        if not (login_resp.ok and login_data.get("ret") == 1):
+            send_push(
+                s,
+                "69云 - 登录失败",
+                login_msg or f"状态码: {login_resp.status_code}",
+            )
+            raise SystemExit(f"[ERROR] login failed, Exception: {login_msg or login_resp.status_code}")
 
+    except Exception as exc:
+        # 登录阶段的任何异常都会触发推送
+        send_push(s, "69云 - 登录失败", str(exc))
+        raise SystemExit(f"[ERROR] login failed, Exception: {exc}")
 
+    # -------------------------
+    # 签到流程
+    # -------------------------
+    try:
+        checkin_resp, data = post_json(
+            s,
+            CHECKIN_URL,
+            headers=CHECKIN_HEADERS
+        )
 
+        # ret == 1 表示签到成功
+        checkin = data.get("ret")
+
+        # 从返回消息中提取“获得的流量”
+        m = re.search(r"获得了\s*([\d.]+\s*[A-Za-z]+)", data.get("msg", ""))
+        gained = m.group(1).replace(" ", "") if m else "NaN"
+
+        # 剩余流量信息
+        traffic_info = data.get("trafficInfo") or {}
+        left = traffic_info.get("unUsedTraffic", "NaN")
+
+        if checkin == 1:
+            # 签到成功（此处仅打印，不推送）
+            print(
+                f"[INFO] success: Check-in successful. "
+                f"Data received: {gained}, remaining data: {left}."
+            )
+            send_push(
+                s,
+                "69云 - 签到成功",
+                f"获得流量: {gained}\n剩余流量: {left}"
+            )
+
+            sys.exit(0)
+
+        elif checkin == 0:
+            # 已经签到过
+            raise SystemExit("[WARNING] checkin fail: You have already checked in.")
+
+        else:
+            # 其他异常情况
+            reason = data.get("msg", "未知原因")
+            send_push(s, "69云 - 签到失败", reason)
+            raise SystemExit(
+                f"[ERROR] checkin fail: Login successful, but check-in failed. Reason: {reason}"
+            )
+
+    except Exception as exc:
+        # 签到阶段异常处理
+        send_push(s, "69云 - 签到失败", str(exc))
+        raise SystemExit(
+            f"[ERROR] checkin fail: Login successful, but check-in failed. Exception: {exc}"
+        )
