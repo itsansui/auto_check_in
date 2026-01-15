@@ -14,31 +14,42 @@ LOGIN_URL = "https://69yun69.com/auth/login"
 
 # 签到接口地址
 CHECKIN_URL = "https://69yun69.com/user/checkin"
+
 # Bark 推送接口（可通过环境变量覆盖）
-PUSH_URL = os.getenv("PUSH_URL", "https://api.day.app/w7JBm2Rx34tcBvSvznpTUT")
+PUSH_URL = os.getenv(
+    "PUSH_URL",
+    "https://api.day.app/w7JBm2Rx34tcBvSvznpTUT"
+)
 
-# Bark 推送级别（passive 表示静默通知）
-BARK_ICON = os.getenv("BARK_ICON", "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg")
+# Bark 推送图标
+BARK_ICON = os.getenv(
+    "BARK_ICON",
+    "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg"
+)
 
-# 登录邮箱（从环境变量读取，避免明文写入代码）
+# 登录邮箱（从环境变量读取）
 LOGIN_EMAIL = os.getenv("LOGIN_EMAIL", "").strip()
 
 # 登录密码（从环境变量读取）
 LOGIN_PASS = os.getenv("LOGIN_PASS", "").strip()
 
-# 登录请求的表单数据
+# 登录请求表单数据
 LOGIN_PAYLOAD = {
-    "email": LOGIN_EMAIL,      # 登录邮箱
-    "passwd": LOGIN_PASS,      # 登录密码
-    "remember_me": "on",       # 记住登录状态
-    "code": "",                # 验证码字段（当前未使用）
+    "email": LOGIN_EMAIL,
+    "passwd": LOGIN_PASS,
+    "remember_me": "on",
+    "code": "",
 }
 
-# 登录请求头（模拟浏览器 + AJAX 请求）
+# 登录请求头
 LOGIN_HEADERS = {
     "Origin": "https://69yun69.com",
     "Referer": "https://69yun69.com/auth/login",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120 Safari/537.36"
+    ),
     "X-Requested-With": "XMLHttpRequest",
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -48,55 +59,51 @@ LOGIN_HEADERS = {
 CHECKIN_HEADERS = {
     "Origin": "https://69yun69.com",
     "Referer": "https://69yun69.com/user",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120 Safari/537.36"
+    ),
     "X-Requested-With": "XMLHttpRequest",
     "Accept": "application/json, text/javascript, */*; q=0.01",
 }
 
 # ============================================================
-# 启动前的安全检查
+# 启动前检查
 # ============================================================
 
-# 必须提供登录邮箱和密码
 if not LOGIN_EMAIL or not LOGIN_PASS:
-    raise SystemExit("Missing LOGIN_EMAIL or LOGIN_PASS environment variables.")
+    raise SystemExit("【启动失败】缺少 LOGIN_EMAIL 或 LOGIN_PASS 环境变量")
 
-# 必须提供推送地址
 if not PUSH_URL:
-    raise SystemExit("Missing PUSH_URL environment variable.")
+    raise SystemExit("【启动失败】缺少 PUSH_URL 环境变量")
 
 
 # ============================================================
-# Bark 推送客户端
+# Bark 推送工具
 # ============================================================
 
 class PushClient:
-    """
-    一个轻量级的 Bark URL 构建器
-    用于拼接：推送标题 / 内容 / 查询参数
-    """
+    """Bark URL 构建器"""
 
     def __init__(self, base_url: str):
-        self.base_url = base_url.rstrip("/")  # 去掉末尾 /
-        self._path_parts = []                 # URL 路径部分
-        self._query = {}                      # URL 查询参数
+        self.base_url = base_url.rstrip("/")
+        self._path_parts = []
+        self._query = {}
 
     def add_path(self, *parts: str):
-        """添加 URL 路径（标题、正文等）"""
         for p in parts:
             if p:
                 self._path_parts.append(p.strip("/"))
         return self
 
     def add_query(self, **params):
-        """添加 URL 查询参数"""
         for k, v in params.items():
             if v is not None:
                 self._query[k] = v
         return self
 
     def build(self) -> str:
-        """生成最终推送 URL"""
         path = "/".join(self._path_parts)
         url = f"{self.base_url}/{path}" if path else self.base_url
         if self._query:
@@ -104,10 +111,13 @@ class PushClient:
         return url
 
 
-def send_push(session: requests.Session, title: str, body: str = "", icon: str = "https://compus-store-oss.oss-cn-beijing.aliyuncs.com/sansui_ai.jpg"):
-    """
-    发送 Bark 推送通知
-    """
+def send_push(
+    session: requests.Session,
+    title: str,
+    body: str = "",
+    icon: str = BARK_ICON
+):
+    """发送 Bark 推送"""
     url = (
         PushClient(PUSH_URL)
         .add_path(title, body)
@@ -122,17 +132,13 @@ def send_push(session: requests.Session, title: str, body: str = "", icon: str =
 # ============================================================
 
 def post_json(session: requests.Session, url: str, **kwargs):
-    """
-    发送 POST 请求并解析 JSON 响应
-    如果返回内容不是 JSON，则抛出异常
-    """
+    """POST 请求并解析 JSON"""
     resp = session.post(url, **kwargs)
     try:
         data = resp.json()
     except ValueError:
-        # 防止服务器返回 HTML 或异常文本
         snippet = resp.text[:80]
-        raise RuntimeError(f"非JSON响应: {snippet}")
+        raise RuntimeError(f"服务器返回非 JSON 内容：{snippet}")
     return resp, data
 
 
@@ -141,6 +147,7 @@ def post_json(session: requests.Session, url: str, **kwargs):
 # ============================================================
 
 with requests.Session() as s:
+
     # -------------------------
     # 登录流程
     # -------------------------
@@ -152,22 +159,23 @@ with requests.Session() as s:
             headers=LOGIN_HEADERS
         )
 
-        # 登录返回消息
-        login_msg = login_data.get("msg", "") if isinstance(login_data, dict) else ""
+        login_msg = login_data.get("msg", "")
 
-        # 登录失败处理
         if not (login_resp.ok and login_data.get("ret") == 1):
             send_push(
                 s,
                 "69云 - 登录失败",
-                login_msg or f"状态码: {login_resp.status_code}",
+                login_msg or f"HTTP 状态码：{login_resp.status_code}"
             )
-            raise SystemExit(f"[ERROR] login failed, Exception: {login_msg or login_resp.status_code}")
+            raise SystemExit(
+                f"【错误】登录失败：{login_msg or login_resp.status_code}"
+            )
+
+        print("【信息】登录成功")
 
     except Exception as exc:
-        # 登录阶段的任何异常都会触发推送
         send_push(s, "69云 - 登录失败", str(exc))
-        raise SystemExit(f"[ERROR] login failed, Exception: {exc}")
+        raise SystemExit(f"【异常】登录过程发生异常：{exc}")
 
     # -------------------------
     # 签到流程
@@ -179,47 +187,45 @@ with requests.Session() as s:
             headers=CHECKIN_HEADERS
         )
 
-        # ret == 1 表示签到成功
         checkin = data.get("ret")
 
-        # 从返回消息中提取“获得的流量”
-        m = re.search(r"获得了\s*([\d.]+\s*[A-Za-z]+)", data.get("msg", ""))
-        gained = m.group(1).replace(" ", "") if m else "NaN"
+        # 提取获得流量
+        m = re.search(
+            r"获得了\s*([\d.]+\s*[A-Za-z]+)",
+            data.get("msg", "")
+        )
+        gained = m.group(1).replace(" ", "") if m else "未知"
 
-        # 剩余流量信息
+        # 剩余流量
         traffic_info = data.get("trafficInfo") or {}
-        left = traffic_info.get("unUsedTraffic", "NaN")
+        left = traffic_info.get("unUsedTraffic", "未知")
 
         if checkin == 1:
-            # 签到成功（此处仅打印，不推送）
             print(
-                f"[INFO] success: Check-in successful. "
-                f"Data received: {gained}, remaining data: {left}."
+                f"【信息】签到成功："
+                f"获得流量 {gained}，"
+                f"剩余流量 {left}"
             )
+
             send_push(
                 s,
                 "69云 - 签到成功",
-                f"获得流量: {gained}\n剩余流量: {left}"
+                f"获得流量：{gained}\n剩余流量：{left}"
             )
-
             sys.exit(0)
 
         elif checkin == 0:
-            # 已经签到过
-            raise SystemExit("[WARNING] checkin fail: You have already checked in.")
+            raise SystemExit("【提示】今日已签到，无需重复操作")
 
         else:
-            # 其他异常情况
             reason = data.get("msg", "未知原因")
             send_push(s, "69云 - 签到失败", reason)
             raise SystemExit(
-                f"[ERROR] checkin fail: Login successful, but check-in failed. Reason: {reason}"
+                f"【错误】签到失败：原因：{reason}"
             )
 
     except Exception as exc:
-        # 签到阶段异常处理
         send_push(s, "69云 - 签到失败", str(exc))
         raise SystemExit(
-            f"[ERROR] checkin fail: Login successful, but check-in failed. Exception: {exc}"
+            f"【异常】签到过程发生异常：{exc}"
         )
-
