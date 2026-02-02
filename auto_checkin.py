@@ -19,7 +19,7 @@ CHECKIN_URL = "https://69yun69.com/user/checkin"
 # Bark 推送接口（可通过环境变量覆盖）
 PUSH_URL = os.getenv(
     "PUSH_URL",
-    "https://api.day.app/w7JBm2Rx34tcBvSvznpTUT"
+    "https://api.day.app/HRRVZbvGJUw2N2wHBuN2vM"
 )
 
 # Bark 推送图标
@@ -223,3 +223,4 @@ with requests.Session() as s:
     except Exception as exc:
         send_push(s, "69云", str(exc))
         raise SystemExit(f"【异常】签到过程发生异常：{exc}")
+
